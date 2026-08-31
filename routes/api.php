@@ -13,4 +13,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('images', ImageController::class)
         ->only(['index', 'store', 'show', 'destroy']);
+
+    Route::post('images/{image}/detect', [ImageController::class, 'detect']);
 });

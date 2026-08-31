@@ -10,6 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
+use App\Enums\DetectionStatus;
+use App\Jobs\RunDetection;
+use App\Http\Resources\DetectionResource;
 
 class ImageController extends Controller
 {
@@ -58,7 +61,15 @@ class ImageController extends Controller
             'captured_at'       => $request->input('captured_at') ?? now(),
         ]);
 
-        // Milestone 6: dispatch(new RunDetection($image));
+       $detection = $image->detections()->create([
+            'user_id'        => $request->user()->id,
+            'status'         => DetectionStatus::Pending,
+            'model'          => config('services.gemini.model'),
+            'prompt_version' => 'v2',
+            'params'         => ['thinkingBudget' => 0],
+        ]);
+
+        RunDetection::dispatch($detection->id);
 
         return response()->json([
             'duplicate' => false,
@@ -85,5 +96,24 @@ class ImageController extends Controller
         $image->delete();
 
         return response()->json(['message' => 'Deleted']);
+    }
+
+    public function detect(Request $request, Image $image): JsonResponse
+    {
+        abort_unless($image->user_id === $request->user()->id, 403);
+
+        $detection = $image->detections()->create([
+            'user_id'        => $request->user()->id,
+            'status'         => DetectionStatus::Pending,
+            'model'          => config('services.gemini.model'),
+            'prompt_version' => 'v2',
+            'params'         => ['thinkingBudget' => 0],
+        ]);
+
+        RunDetection::dispatch($detection->id);
+
+        return response()->json([
+            'data' => DetectionResource::make($detection),
+        ], 202);
     }
 }
