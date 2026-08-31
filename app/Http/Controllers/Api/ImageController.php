@@ -79,13 +79,9 @@ class ImageController extends Controller
 
     public function show(Request $request, Image $image): ImageResource
     {
-        // Ownership check. Without this, image ID 5 is readable by anyone —
-        // the single most common API vulnerability (IDOR).
         abort_unless($image->user_id === $request->user()->id, 403);
 
-        return ImageResource::make(
-            $image->load(['latestDetection.objects'])->loadCount('detectedObjects')
-        );
+        return ImageResource::make($image->load(['latestDetection.objects']));
     }
 
     public function destroy(Request $request, Image $image): JsonResponse

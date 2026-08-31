@@ -26,7 +26,9 @@ class ImageResource extends JsonResource
             'captured_at'       => $this->captured_at?->toIso8601String(),
             'created_at'        => $this->created_at->toIso8601String(),
             'latest_detection'  => DetectionResource::make($this->whenLoaded('latestDetection')),
-            'object_count'      => $this->whenCounted('detectedObjects'),
+            'object_count'      => $this->relationLoaded('latestDetection') && $this->latestDetection
+            ? $this->latestDetection->objects->count()
+            : $this->whenCounted('detectedObjects'),
         ];
     }
 }

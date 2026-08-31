@@ -80,7 +80,18 @@ class GeminiDetectionService
         // Gemini gives the JSON back as a *string* inside the text part,
         // so it needs decoding a second time.
         $objects = json_decode($text, true);
-
+        $objects = array_map(function (array $o): array {
+            return [
+                'label'      => trim(strtolower($o['label'])),
+                'confidence' => (float) $o['confidence'],
+                // Gemini uses a 0-1000 grid regardless of what the prompt asks for.
+                'x'          => min(1, max(0, $o['x'] / 1000)),
+                'y'          => min(1, max(0, $o['y'] / 1000)),
+                'width'      => min(1, max(0, $o['width'] / 1000)),
+                'height'     => min(1, max(0, $o['height'] / 1000)),
+            ];
+        }, $objects);
+        
         if (! is_array($objects)) {
             throw new RuntimeException('Could not decode detection JSON: ' . $text);
         }
