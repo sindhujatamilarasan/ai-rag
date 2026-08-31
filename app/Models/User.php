@@ -9,13 +9,15 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
+
 class User extends Authenticatable
 {
+    use HasApiTokens, HasFactory, Notifiable;
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -28,5 +30,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function images(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Image::class);
+    }
+
+    public function detections(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Detection::class);
     }
 }
