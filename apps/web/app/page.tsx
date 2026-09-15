@@ -851,6 +851,12 @@ function Result({ c, image }: { c: typeof LIGHT; image: ImageItem | null }) {
 /* History                                                              */
 /* ------------------------------------------------------------------ */
 
+type SearchHit = {
+  similarity: number;
+  matched_label: string;
+  image: ImageItem;
+};
+
 function History({
   c,
   images,
@@ -861,12 +867,39 @@ function History({
   onOpen: (img: ImageItem) => void;
 }) {
   const [q, setQ] = useState('');
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const shown = images.filter((i) => {
-    if (!q.trim()) return true;
-    const hay = [i.title ?? '', i.original_filename].join(' ').toLowerCase();
-    return hay.includes(q.toLowerCase());
-  });
+  // Debounced — every keystroke would be an embedding call, which costs money
+  // and hits rate limits. 400ms after typing stops is one call per search.
+  useEffect(() => {
+    const term = q.trim();
+
+    if (!term) {
+      setHits(null);
+      return;
+    }
+
+    setBusy(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await call<{ data: SearchHit[] }>(
+          `/search?q=${encodeURIComponent(term)}`,
+        );
+        setHits(res.data);
+      } catch {
+        setHits([]);
+      } finally {
+        setBusy(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const searching = hits !== null;
+  const shown = searching ? hits.map((h) => h.image) : images;
+  const scoreFor = (id: number) => hits?.find((h) => h.image.id === id);
 
   return (
     <section>
@@ -893,12 +926,12 @@ function History({
             marginBottom: 6,
           }}
         >
-          Search photos
+          Search photos by meaning
         </label>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="e.g. damaged pipe"
+          placeholder="e.g. something you write with"
           style={{
             width: '100%',
             minHeight: 46,
@@ -910,6 +943,9 @@ function History({
             fontSize: 15,
           }}
         />
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: c.mu }}>
+          Searches what the AI saw, not the filename — try “flying”, “stationery”, “furniture”.
+        </p>
       </div>
 
       <p
@@ -921,11 +957,11 @@ function History({
           letterSpacing: '0.06em',
         }}
       >
-        {shown.length} of {images.length} photos
+        {busy ? 'Searching…' : searching ? `${shown.length} matches` : `${images.length} photos`}
       </p>
 
-      {shown.length === 0 ? (
-        <Empty c={c} text="No photos yet. Capture one to get started." />
+      {shown.length === 0 && !busy ? (
+        <Empty c={c} text={searching ? 'Nothing matched that.' : 'No photos yet.'} />
       ) : (
         <div
           style={{
@@ -934,59 +970,62 @@ function History({
             gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
           }}
         >
-          {shown.map((img) => (
-            <button
-              key={img.id}
-              onClick={() => onOpen(img)}
-              style={{
-                textAlign: 'left',
-                padding: 0,
-                borderRadius: 16,
-                overflow: 'hidden',
-                border: `1px solid ${c.bd}`,
-                background: c.sf,
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ position: 'relative', aspectRatio: '1/1', background: c.sf2 }}>
-                <img
-                  src={`${ORIGIN}${img.url}`}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    background: 'rgba(0,0,0,.66)',
-                    color: '#fff',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '3px 8px',
-                    borderRadius: 999,
-                  }}
-                >
-                  {img.object_count ?? 0} obj
-                </span>
-              </div>
+          {shown.map((img) => {
+            const hit = scoreFor(img.id);
 
-              <div style={{ padding: '10px 12px 12px' }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                  {img.title ?? img.original_filename}
-                </p>
-                <p style={{ margin: '3px 0 0', fontSize: 12, color: c.mu }}>
-                  {new Date(img.captured_at).toLocaleDateString()}
-                </p>
-              </div>
-            </button>
-          ))}
+            return (
+              <button
+                key={img.id}
+                onClick={() => onOpen(img)}
+                style={{
+                  textAlign: 'left',
+                  padding: 0,
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  border: `1px solid ${hit ? ACCENT : c.bd}`,
+                  background: c.sf,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ position: 'relative', aspectRatio: '1/1', background: c.sf2 }}>
+                  <img
+                    src={`${ORIGIN}${img.url}`}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      background: hit ? ACCENT : 'rgba(0,0,0,.66)',
+                      color: '#fff',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: 999,
+                    }}
+                  >
+                    {hit ? `${Math.round(hit.similarity * 100)}%` : `${img.object_count ?? 0} obj`}
+                  </span>
+                </div>
+
+                <div style={{ padding: '10px 12px 12px' }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                    {img.title ?? img.original_filename}
+                  </p>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, color: c.mu }}>
+                    {hit ? `matched “${hit.matched_label}”` : new Date(img.captured_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
-
 /* ------------------------------------------------------------------ */
 /* Small shared pieces                                                  */
 /* ------------------------------------------------------------------ */

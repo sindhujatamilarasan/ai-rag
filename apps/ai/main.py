@@ -1,3 +1,5 @@
+import asyncio
+from pydantic import BaseModel
 import base64
 import os
 
@@ -37,6 +39,47 @@ SCHEMA = {
 }
 
 app = FastAPI(title="VisionDesk AI Service")
+
+EMBED_MODEL = "gemini-embedding-001"
+EMBED_DIMS = 768
+
+
+def normalize(v: list[float]) -> list[float]:
+    """Gemini only returns unit-length vectors at the full 3072 dims.
+    Truncated output must be re-normalized or cosine distance is wrong."""
+    mag = sum(x * x for x in v) ** 0.5
+    return [x / mag for x in v] if mag else v
+
+
+async def embed_text(text: str) -> list[float]:
+    async with httpx.AsyncClient(timeout=30) as client:
+        res = await client.post(
+            f"{BASE}/{EMBED_MODEL}:embedContent",
+            headers={"x-goog-api-key": API_KEY},
+            json={
+                "content": {"parts": [{"text": text}]},
+                "outputDimensionality": EMBED_DIMS,
+            },
+        )
+
+    if res.status_code != 200:
+        raise HTTPException(res.status_code, f"Embedding failed: {res.text}")
+
+    return normalize(res.json()["embedding"]["values"])
+
+
+class EmbedRequest(BaseModel):
+    texts: list[str]
+
+
+@app.post("/embed")
+async def embed(req: EmbedRequest):
+    if not req.texts:
+        raise HTTPException(422, "texts must not be empty")
+
+    vectors = await asyncio.gather(*(embed_text(t) for t in req.texts))
+
+    return {"embeddings": vectors, "dimensions": EMBED_DIMS}
 
 
 @app.get("/health")
