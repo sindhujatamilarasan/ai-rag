@@ -38,5 +38,7 @@ return [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-3.5-flash'),
     ],
-
+    'ai' => [
+        'url' => env('AI_SERVICE_URL', 'http://localhost:8001'),
+    ],
 ];

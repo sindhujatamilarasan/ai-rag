@@ -50,8 +50,7 @@ class RunDetection implements ShouldQueue
              * Gemini detection logic
              * from DetectObjects command
              */
-            $result = app(\App\Services\GeminiDetectionService::class)
-                ->detect($image);
+           $result = app(\App\Services\DetectionService::class)->detect($image);
 
             if (empty($result['objects'])) {
                 throw new RuntimeException('Detection returned no objects');
@@ -92,15 +91,20 @@ class RunDetection implements ShouldQueue
             });
 
         } catch (Throwable $e) {
+            // A client error means the request itself is wrong — retrying sends the
+            // identical broken request again. Fail immediately instead of burning
+            // three attempts and 100 seconds on a guaranteed failure.
+            if ($e instanceof \Illuminate\Http\Client\RequestException
+                && $e->response->status() >= 400
+                && $e->response->status() < 500
+                && $e->response->status() !== 429) {
 
-            /*
-             * Re-throw the exception.
-             *
-             * Laravel Queue will automatically retry
-             * according to $tries and $backoff.
-             */
-            throw $e;
-        }
+                $this->fail($e);      // skips remaining retries, calls failed()
+                return;
+            }
+
+            throw $e;                 // transient — let the queue retry
+         }
     }
 
     /**
