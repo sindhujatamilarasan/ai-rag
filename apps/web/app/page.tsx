@@ -96,7 +96,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /* ------------------------------------------------------------------ */
 
-type Screen = 'capture' | 'result' | 'history';
+type Screen = 'capture' | 'result' | 'history' | 'ask';
 
 export default function VisionDesk() {
   const [dark, setDark] = useState(false);
@@ -246,7 +246,7 @@ export default function VisionDesk() {
           </button>
 
           <nav style={{ display: 'flex', gap: 6, order: 3, width: '100%' }}>
-            {(['capture', 'result', 'history'] as Screen[]).map((s) => (
+            {(['capture', 'result', 'history', 'ask'] as Screen[]).map((s) => (
               <button
                 key={s}
                 onClick={() => setScreen(s)}
@@ -306,6 +306,17 @@ export default function VisionDesk() {
             images={images}
             onOpen={async (img) => {
               const res = await call<{ data: ImageItem }>(`/images/${img.id}`);
+              setCurrent(res.data);
+              setScreen('result');
+            }}
+          />
+        )}
+
+        {screen === 'ask' && (
+          <Ask
+            c={c}
+            onOpen={async (id) => {
+              const res = await call<{ data: ImageItem }>(`/images/${id}`);
               setCurrent(res.data);
               setScreen('result');
             }}
@@ -1204,5 +1215,219 @@ function Logo({ size = 26 }: { size?: number }) {
     >
       VD
     </div>
+  );
+}
+type AskResponse = {
+  question: string;
+  answered: boolean;
+  answer: string;
+  cited_images: ImageItem[];
+  context_size: number;
+  usage: { total_tokens?: number };
+};
+
+function Ask({ c, onOpen }: { c: typeof LIGHT; onOpen: (id: number) => void }) {
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<AskResponse | null>(null);
+  const [err, setErr] = useState('');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!q.trim()) return;
+
+    setBusy(true);
+    setErr('');
+    setRes(null);
+
+    try {
+      setRes(await call<AskResponse>('/ask', {
+        method: 'POST',
+        body: JSON.stringify({ question: q.trim() }),
+      }));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const samples = [
+    'Do I have any photos with a pen?',
+    'Which photos have paper in them?',
+    'Were there any safety issues on site?',
+  ];
+
+  return (
+    <section>
+      <h1 style={{ margin: '6px 0 4px', fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' }}>
+        Ask
+      </h1>
+      <p style={{ margin: '0 0 18px', fontSize: 15, lineHeight: 1.5, color: c.mu, maxWidth: '52ch' }}>
+        Ask about anything VisionDesk has seen in your photos. Every answer cites the
+        photos it came from — and says so when your photos cannot answer.
+      </p>
+
+      <form onSubmit={submit} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="e.g. which photos show damaged equipment?"
+          style={{
+            flex: '1 1 320px',
+            minHeight: 52,
+            padding: '0 16px',
+            borderRadius: 14,
+            border: `1px solid ${c.bd}`,
+            background: c.sf,
+            color: c.tx,
+            fontSize: 15,
+          }}
+        />
+        <button
+          type="submit"
+          disabled={busy || !q.trim()}
+          style={{
+            minHeight: 52,
+            padding: '0 26px',
+            borderRadius: 14,
+            border: 'none',
+            background: busy || !q.trim() ? c.sf2 : ACCENT,
+            color: busy || !q.trim() ? c.mu : '#fff',
+            fontSize: 15,
+            fontWeight: 700,
+            cursor: busy || !q.trim() ? 'default' : 'pointer',
+          }}
+        >
+          {busy ? 'Thinking…' : 'Ask'}
+        </button>
+      </form>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+        {samples.map((s) => (
+          <button
+            key={s}
+            onClick={() => setQ(s)}
+            style={{
+              padding: '7px 13px',
+              borderRadius: 999,
+              border: `1px solid ${c.bd}`,
+              background: c.sf,
+              color: c.mu,
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {busy && <Pulse c={c} label="Searching your photos…" />}
+
+      {err && (
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 13,
+            background: 'oklch(0.66 0.19 25 / 0.12)',
+            border: '1px solid oklch(0.66 0.19 25 / 0.4)',
+            fontSize: 14,
+          }}
+        >
+          {err}
+        </div>
+      )}
+
+      {res && (
+        <>
+          <div
+            style={{
+              padding: 18,
+              borderRadius: 16,
+              // A refusal is styled differently on purpose: "I don't know" must
+              // not look like an answer, or users read past it.
+              border: `1px solid ${res.answered ? c.bd : 'oklch(0.66 0.19 25 / 0.45)'}`,
+              background: res.answered ? c.sf : 'oklch(0.66 0.19 25 / 0.07)',
+            }}
+          >
+            <p
+              style={{
+                margin: '0 0 8px',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase',
+                color: res.answered ? ACCENT_DEEP : 'oklch(0.66 0.19 25)',
+              }}
+            >
+              {res.answered ? 'Answer' : 'Not in your photos'}
+            </p>
+
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55 }}>{res.answer}</p>
+
+            <p style={{ margin: '14px 0 0', fontSize: 12, color: c.mu }}>
+              searched {res.context_size} detections · {res.usage?.total_tokens ?? 0} tokens
+            </p>
+          </div>
+
+          {res.cited_images.length > 0 && (
+            <>
+              <p
+                style={{
+                  margin: '20px 0 10px',
+                  fontSize: 12,
+                  color: c.mu,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Based on these photos
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 14,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                }}
+              >
+                {res.cited_images.map((img) => (
+                  <button
+                    key={img.id}
+                    onClick={() => onOpen(img.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: 0,
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      border: `1px solid ${ACCENT}`,
+                      background: c.sf,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ aspectRatio: '1/1', background: c.sf2 }}>
+                      <img
+                        src={`${ORIGIN}${img.url}`}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    </div>
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                        {img.title ?? img.original_filename}
+                      </p>
+                      <p style={{ margin: '3px 0 0', fontSize: 12, color: c.mu }}>
+                        tap to verify
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </section>
   );
 }
