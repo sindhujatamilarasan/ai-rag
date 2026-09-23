@@ -1,0 +1,208 @@
+{
+  "summary": {
+    "cases": 20,
+    "errors": 16,
+    "decision_accuracy": 1.0,
+    "retrieval_recall": 0.9166666666666666,
+    "citation_precision": 1.0,
+    "citation_recall": 0.9166666666666666,
+    "refusal_accuracy": null,
+    "citation_leaks": 0,
+    "count_accuracy": null,
+    "avg_seconds": 27.4575,
+    "total_tokens": 4470
+  },
+  "rows": [
+    {
+      "id": "direct-pen",
+      "question": "Which photos have a pen?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "direct-balloon",
+      "question": "Do I have a photo of a hot air balloon?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "direct-plush",
+      "question": "Which photos have a plush toy?",
+      "should_answer": true,
+      "answered": true,
+      "decision_ok": true,
+      "retrieved": [
+        3,
+        4,
+        7,
+        8
+      ],
+      "cited": [
+        4,
+        7
+      ],
+      "expected": [
+        4,
+        7
+      ],
+      "answer": "Photos with image_id 4 and 7 contain a plush toy.",
+      "seconds": 35.86,
+      "tokens": 1035,
+      "retrieval_recall": 1.0,
+      "citation_recall": 1.0,
+      "citation_precision": 1.0
+    },
+    {
+      "id": "direct-book",
+      "question": "Do I have photos of books?",
+      "should_answer": true,
+      "answered": true,
+      "decision_ok": true,
+      "retrieved": [
+        3,
+        8,
+        12
+      ],
+      "cited": [
+        12
+      ],
+      "expected": [
+        12
+      ],
+      "answer": "Yes, you have photos containing books in image 12, with confidence levels ranging from 0.97 to 0.99.",
+      "seconds": 36.58,
+      "tokens": 1111,
+      "retrieval_recall": 1.0,
+      "citation_recall": 1.0,
+      "citation_precision": 1.0
+    },
+    {
+      "id": "para-writing",
+      "question": "Show me photos of writing instruments",
+      "should_answer": true,
+      "answered": true,
+      "decision_ok": true,
+      "retrieved": [
+        2,
+        3,
+        4,
+        5,
+        8,
+        9,
+        10
+      ],
+      "cited": [
+        5,
+        10
+      ],
+      "expected": [
+        1,
+        5,
+        10
+      ],
+      "answer": "Photos of writing instruments (specifically pens) were found in image 5 and image 10.",
+      "seconds": 24.18,
+      "tokens": 1097,
+      "retrieval_recall": 0.6666666666666666,
+      "citation_recall": 0.6666666666666666,
+      "citation_precision": 1.0
+    },
+    {
+      "id": "para-edible",
+      "question": "Which photos contain something edible?",
+      "should_answer": true,
+      "answered": true,
+      "decision_ok": true,
+      "retrieved": [
+        3,
+        5,
+        8,
+        11,
+        13,
+        14
+      ],
+      "cited": [
+        13,
+        14
+      ],
+      "expected": [
+        13,
+        14
+      ],
+      "answer": "Photos containing edible items are image 13, which contains an apple (confidence 0.99), and image 14, which contains oranges (confidence 0.98 and 0.99).",
+      "seconds": 13.21,
+      "tokens": 1227,
+      "retrieval_recall": 1.0,
+      "citation_recall": 1.0,
+      "citation_precision": 1.0
+    },
+    {
+      "id": "para-flying",
+      "question": "Do I have anything that flies?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "para-toys",
+      "question": "Show me photos of toys",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "para-hair",
+      "question": "Any photos of hair accessories?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "para-blooms",
+      "question": "Which photos have blooms or blossoms?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "cat-furniture",
+      "question": "Show me photos with furniture",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "cat-stationery",
+      "question": "Which photos contain stationery?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "cat-workspace",
+      "question": "Show me photos of a workspace",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "count-books",
+      "question": "How many books are in my photos?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "count-pen-photos",
+      "question": "How many photos contain a pen?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "refuse-car",
+      "question": "Do I have any photos of cars?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "refuse-dog",
+      "question": "Do I have any photos of dogs?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "refuse-brand",
+      "question": "What brand is the watch?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "refuse-pen-model",
+      "question": "What model is the pen?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    },
+    {
+      "id": "refuse-sofa-colour",
+      "question": "What colour is the sofa?",
+      "error": "Server error '500 Internal Server Error' for url 'http://localhost:8000/api/ask'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
+    }
+  ]
+}

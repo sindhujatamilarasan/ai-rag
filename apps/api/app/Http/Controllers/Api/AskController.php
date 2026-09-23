@@ -66,12 +66,18 @@ class AskController extends Controller
             ->get();
 
         return response()->json([
-            'question'       => $data['question'],
-            'answered'       => $answer['answered'] ?? false,
-            'answer'         => $answer['answer'] ?? '',
-            'cited_images'   => ImageResource::collection($cited),
-            'context_size'   => count($rows),
-            'usage'          => $answer['usage'] ?? [],
+            'question'            => $data['question'],
+            'answered'            => $answer['answered'] ?? false,
+            'answer'              => $answer['answer'] ?? '',
+            'cited_images'        => ImageResource::collection($cited),
+            // Exposed so evaluation can score retrieval separately from generation —
+            // otherwise a bad answer can't be traced to "wrong photos fetched" vs
+            // "right photos, wrong reasoning".
+            'retrieved_image_ids' => array_values(array_unique(
+                array_map(fn ($r) => (int) $r->image_id, $rows)
+            )),
+            'context_size'        => count($rows),
+            'usage'               => $answer['usage'] ?? [],
         ]);
     }
 }

@@ -1,0 +1,26 @@
+[
+  { "id": "direct-pen",        "question": "Which photos have a pen?",                  "expected_images": [1, 5, 10], "should_answer": true },
+  { "id": "direct-balloon",    "question": "Do I have a photo of a hot air balloon?",   "expected_images": [6],        "should_answer": true },
+  { "id": "direct-plush",      "question": "Which photos have a plush toy?",            "expected_images": [4, 7],     "should_answer": true },
+  { "id": "direct-book",       "question": "Do I have photos of books?",                "expected_images": [12],       "should_answer": true },
+
+  { "id": "para-writing",      "question": "Show me photos of writing instruments",     "expected_images": [1, 5, 10], "should_answer": true },
+  { "id": "para-edible",       "question": "Which photos contain something edible?",    "expected_images": [13, 14],   "should_answer": true },
+  { "id": "para-flying",       "question": "Do I have anything that flies?",            "expected_images": [6],        "should_answer": true },
+  { "id": "para-toys",         "question": "Show me photos of toys",                    "expected_images": [4, 7],     "should_answer": true },
+  { "id": "para-hair",         "question": "Any photos of hair accessories?",           "expected_images": [2],        "should_answer": true },
+  { "id": "para-blooms",       "question": "Which photos have blooms or blossoms?",     "expected_images": [3, 11],    "should_answer": true },
+
+  { "id": "cat-furniture",     "question": "Show me photos with furniture",             "expected_images": [1, 5, 8],  "should_answer": true },
+  { "id": "cat-stationery",    "question": "Which photos contain stationery?",          "expected_images": [1, 5, 10], "should_answer": true },
+  { "id": "cat-workspace",     "question": "Show me photos of a workspace",             "expected_images": [1, 5],     "should_answer": true },
+
+  { "id": "count-books",       "question": "How many books are in my photos?",          "expected_images": [12],       "should_answer": true, "expected_answer_contains": "6" },
+  { "id": "count-pen-photos",  "question": "How many photos contain a pen?",            "expected_images": [1, 5, 10], "should_answer": true, "expected_answer_contains": "3" },
+
+  { "id": "refuse-car",        "question": "Do I have any photos of cars?",             "expected_images": [],         "should_answer": false },
+  { "id": "refuse-dog",        "question": "Do I have any photos of dogs?",             "expected_images": [],         "should_answer": false },
+  { "id": "refuse-brand",      "question": "What brand is the watch?",                  "expected_images": [],         "should_answer": false },
+  { "id": "refuse-pen-model",  "question": "What model is the pen?",                    "expected_images": [],         "should_answer": false },
+  { "id": "refuse-sofa-colour","question": "What colour is the sofa?",                  "expected_images": [],         "should_answer": false }
+]

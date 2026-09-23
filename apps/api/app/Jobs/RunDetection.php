@@ -24,7 +24,7 @@ class RunDetection implements ShouldQueue
 
     public array $backoff = [10, 30, 60];
 
-    public int $timeout = 180;
+    public int $timeout = 240;
 
     public function __construct(public int $detectionId)
     {

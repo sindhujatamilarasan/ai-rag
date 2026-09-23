@@ -27,15 +27,16 @@ app = FastAPI(title="VisionDesk AI Service")
 async def gemini_post(payload: dict) -> dict:
     """Call Gemini with bounded retries.
 
-    Free-tier latency is spiky: a request that times out once often succeeds
-    immediately on retry. Retries timeouts, 5xx and 429 — never a plain 4xx,
-    because a malformed request stays malformed no matter how often you send it.
+    Retries timeouts, 5xx and 429 — never a plain 4xx, because a malformed
+    request stays malformed no matter how often you send it. A 429 waits
+    longer: the free-tier quota window is per minute, so 1-2s of backoff
+    just burns the retries.
     """
     last = "unknown"
 
     for attempt in range(3):
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            async with httpx.AsyncClient(timeout=45) as client:
                 res = await client.post(
                     f"{BASE}/{MODEL}:generateContent",
                     headers={"x-goog-api-key": API_KEY},
@@ -50,10 +51,14 @@ async def gemini_post(payload: dict) -> dict:
 
             last = f"{res.status_code} {res.text[:200]}"
 
-        except httpx.TimeoutException as exc:
-            last = f"timeout after 120s ({type(exc).__name__})"
+            if res.status_code == 429:
+                await asyncio.sleep(15 * (attempt + 1))   # 15s, 30s, 45s
+                continue
 
-        await asyncio.sleep(2 ** attempt)      # 1s, 2s, 4s
+        except httpx.TimeoutException as exc:
+            last = f"timeout after 45s ({type(exc).__name__})"
+
+        await asyncio.sleep(2 ** attempt)                 # 1s, 2s, 4s
 
     raise HTTPException(504, f"Gemini unavailable after 3 attempts: {last}")
 
