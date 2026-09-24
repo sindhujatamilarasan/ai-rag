@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  images:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Kadaisi neram-la "en machine-la work aagudhu" nu solradhukku badhila,
+      # ovvoru push-kum clean machine-la build aaguthaa nu check pannudhu.
+      - run: docker build -t visiondesk-ai ./apps/ai
+      - run: docker build -t visiondesk-api ./apps/api
+      - run: docker build -t visiondesk-web ./apps/web
+
+  checks:
+    name: Syntax checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      # py_compile parse pannum — nee nethu paatha SyntaxError maari onnu
+      # merge aagaama thadukkum.
+      - run: python -m compileall -q apps/ai
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - run: find apps/api/app apps/api/routes -name "*.php" -print0 | xargs -0 -n1 php -l
