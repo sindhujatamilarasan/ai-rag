@@ -23,18 +23,22 @@ app = FastAPI(title="VisionDesk AI Service")
 # ---------------------------------------------------------------------------
 # Shared Gemini client
 # ---------------------------------------------------------------------------
+def retry_after(body_text: str) -> float:
+    """Gemini sends the exact wait in its 429 body. Guessing a backoff wastes
+    either the retry (too short) or the clock (too long) — the server knows."""
+    try:
+        for d in json.loads(body_text)["error"].get("details", []):
+            if "retryDelay" in d:
+                return float(d["retryDelay"].rstrip("s")) + 1
+    except Exception:
+        pass
+    return 15.0
+
 
 async def gemini_post(payload: dict) -> dict:
-    """Call Gemini with bounded retries.
-
-    Retries timeouts, 5xx and 429 — never a plain 4xx, because a malformed
-    request stays malformed no matter how often you send it. A 429 waits
-    longer: the free-tier quota window is per minute, so 1-2s of backoff
-    just burns the retries.
-    """
     last = "unknown"
 
-    for attempt in range(3):
+    for attempt in range(5):
         try:
             async with httpx.AsyncClient(timeout=45) as client:
                 res = await client.post(
@@ -52,16 +56,15 @@ async def gemini_post(payload: dict) -> dict:
             last = f"{res.status_code} {res.text[:200]}"
 
             if res.status_code == 429:
-                await asyncio.sleep(15 * (attempt + 1))   # 15s, 30s, 45s
+                await asyncio.sleep(retry_after(res.text))
                 continue
 
         except httpx.TimeoutException as exc:
             last = f"timeout after 45s ({type(exc).__name__})"
 
-        await asyncio.sleep(2 ** attempt)                 # 1s, 2s, 4s
+        await asyncio.sleep(2 ** attempt)
 
-    raise HTTPException(504, f"Gemini unavailable after 3 attempts: {last}")
-
+    raise HTTPException(504, f"Gemini unavailable after 5 attempts: {last}")
 
 def first_text(body: dict) -> str:
     """Pull the text part out of a Gemini response, or fail loudly."""

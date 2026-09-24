@@ -1,0 +1,96 @@
+name: visiondesk
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ragdb
+    ports:
+      - "5433:5432"          # JKR 5432-a use pandradhaala, veliya 5433
+    volumes:
+      - ai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ai-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@visiondesk.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5051:80"
+
+  ai:
+    build: ./apps/ai
+    container_name: ai-service
+    restart: unless-stopped
+    env_file: ./apps/ai/.env
+    ports:
+      - "8001:8001"
+
+  api:
+    build: ./apps/api
+    container_name: ai-api
+    restart: unless-stopped
+    env_file: ./apps/api/.env
+    environment:
+      # Container-ukkulla irundhu pesumbodhu service name + internal port.
+      # localhost na "indha container" nu artham, adhula Postgres illa.
+      DB_HOST: postgres
+      DB_PORT: 5432
+      AI_SERVICE_URL: http://ai:8001
+    ports:
+      - "8000:8000"
+    volumes:
+      - ai_storage:/app/storage/app        # upload panna photos poga koodadhu
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "php artisan migrate --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=8000"
+
+  queue:
+    build: ./apps/api
+    container_name: ai-queue
+    restart: unless-stopped
+    env_file: ./apps/api/.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      AI_SERVICE_URL: http://ai:8001
+      DB_QUEUE_RETRY_AFTER: 420
+    volumes:
+      - ai_storage:/app/storage/app        # api-yoda adhe photos venum
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: php artisan queue:work --tries=3 --timeout=360
+
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        # Idhu browser-la odura code-la poguthu. Browser un laptop-la odudhu,
+        # container network-ku veliya. Adhanaala inga "api" nu service name
+        # potta work aagaadhu — "localhost:8000" dhaan.
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    container_name: ai-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  ai_postgres_data:
+  ai_storage:
+
+

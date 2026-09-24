@@ -17,7 +17,7 @@ class DetectionService
             throw new RuntimeException("Image file missing: {$image->path}");
         }
 
-        $response = Http::timeout(150)
+        $response = Http::timeout(300)
             ->attach('image', file_get_contents($path), basename($path))
             ->post(config('services.ai.url') . '/detect')
             // throw() turns a 4xx/5xx into a RequestException, which is what the

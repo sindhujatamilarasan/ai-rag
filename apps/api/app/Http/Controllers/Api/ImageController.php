@@ -36,8 +36,26 @@ class ImageController extends Controller
         // Same photo, same user, already uploaded? Return the existing record
         // instead of paying ~1,100 tokens to detect it again.
         $existing = $request->user()->images()->where('checksum', $checksum)->first();
-
         if ($existing) {
+            $last = $existing->latestDetection;
+
+            // Dedup saves tokens on a photo we already understood. But a failed
+            // detection understood nothing — re-uploading is the user saying
+            // "try again", and the only retry path they have.
+            if (! $last || $last->status === DetectionStatus::Failed) {
+                $retry = $existing->detections()->create([
+                    'user_id'        => $request->user()->id,
+                    'status'         => DetectionStatus::Pending,
+                    'model'          => config('services.gemini.model'),
+                    'prompt_version' => 'v2',
+                    'params'         => ['thinkingBudget' => 0],
+                ]);
+
+                RunDetection::dispatch($retry->id);
+
+                $existing->load('latestDetection');
+            }
+
             return response()->json([
                 'message'   => 'This image was already uploaded.',
                 'duplicate' => true,
